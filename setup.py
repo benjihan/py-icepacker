@@ -12,10 +12,11 @@ from setuptools.command.build_py import build_py
 from ctypes import cdll
 from ctypes.util import find_library
 
-modname='icepack'
+modname='icepacker'
 libbase='unice68'
 top_dir = os.path.dirname(__file__)
 lib_dir = os.path.join(top_dir, modname, 'lib')
+os.makedirs(lib_dir, exist_ok=True) # setuptools need this
 
 class CustomBuildPy(build_py):
     """Custom build command to compile unice68 using a simple Makefile."""
@@ -42,11 +43,11 @@ class CustomBuildPy(build_py):
         """Try to load existing shared library."""
         try:
             lib = cdll.LoadLibrary(lib_path)
-            print(f"Check loaded DLL: {lib_path}")
+            # print(f"Check loaded DLL: {lib_path}")
             for symbol in ('unice68_packer','unice68_depacker','unice68_depacked_size'):
                 if not hasattr(lib, symbol):
                     raise RuntimeError(f'{symbol} symbol not found in {lib_path}')
-                print(f"- found {symbol}()")
+                # print(f"- found {symbol}()")
         except OSError as e:
             return False
         return True
@@ -86,15 +87,13 @@ class CustomBuildPy(build_py):
         elif system in ( 'Darwin', 'iOS' ):
             return 'lib'+libbase+'.dylib'
         elif system not in ( 'Linux', 'Android' ):
-            print('Warning: could not determine platform dynamic library naming scheme')
+            pass
+            #print('Warning: could not determine platform dynamic library naming scheme')
         return 'lib'+libbase+'.so'
 
     def build_nativelib(self):
-        """Compile unice68 using Makefile."""
+        """Compile unice68 DSO with Makefile."""
         src_dir = os.path.join(top_dir, "unice68")
-        lib_dir = os.path.join(top_dir, modname, 'lib')
-        os.makedirs(lib_dir, exist_ok=True)
-
         print(f"Building {libbase}:")
         print(f"- src_dir: {src_dir}")
         print(f"- lib_dir: {lib_dir}")
@@ -108,7 +107,7 @@ class CustomBuildPy(build_py):
                     print(f"- Add '{var}={val}'")
                     make_cmd.append(var+'='+val)
             subprocess.check_call(make_cmd)
-            print(f"Sucessfully build {libbase}")
+            print(f"Sucessfully built {libbase}")
             return True
         except subprocess.CalledProcessError as e:
             print(f"Building {libbase} failed: {e}")
@@ -116,13 +115,5 @@ class CustomBuildPy(build_py):
 
 setup(
     # Minimal setup.py as metadata is in pyproject.toml
-    packages=find_packages(),
-    package_data={
-        "icepack": [
-            f"lib/lib{libbase}.so",
-            f"lib/{libbase}.dll",
-            f"lib/lib{libbase}.dylib",
-        ]
-    },
     cmdclass={"build_py": CustomBuildPy},
 )
