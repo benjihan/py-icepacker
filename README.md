@@ -1,6 +1,8 @@
-# Unice68 Python Interface
+# icepacker - Unice68 Python Interface
 
-A Python interface for the `unice68` C library, enabling data compression and decompression using the `unice68_depacked_size`, `unice68_depacker`, and `unice68_packer` functions.
+A Python interface for the `unice68` C library, enabling data
+compression and decompression using the `unice68_depacked_size`,
+`unice68_depacker`, and `unice68_packer` functions.
 
 ## Installation
 
@@ -8,18 +10,22 @@ A Python interface for the `unice68` C library, enabling data compression and de
 pip install .
 ```
 
-The package includes prebuilt binaries for Linux x86_64 (`libunice68.so`), Windows 64-bit (`unice68.dll`), and macOS (`libunice68.dylib`) in `icepack/lib/`. If no binary is available for your platform, `libunice6i8` will be compiled from source using a simple `Makefile`.
-
 ### Prerequisites
 
-- **For prebuilt binaries**: No prerequisites.
+The build process will look for a suitable unice68 library in the
+`icepacker/lib` directory. If it does not found one it will try to
+compile one using the Makefile. If this failed it will check for a
+system-wide version.
+
 - **For compilation**:
   - A C compiler (`gcc`, `clang` on Linux/macOS, `MSVC` or `MinGW` on Windows).
   - `make` (included in most Unix environments, or via `MinGW` on Windows).
+  
 
 ### Customizing Compilation Flags
 
-To customize compilation flags, set environment variables before running `pip install`:
+To customize compilation flags, set environment variables before
+running `pip install`:
 
  | Variables | Default value |
  | :-------- | :------------ |
@@ -29,7 +35,7 @@ To customize compilation flags, set environment variables before running `pip in
 
 ```bash
 export CC=x86_64-w64-mingw32-gcc
-export CFLAGS="-O3 -march=native -L/path/to/libs"
+export CFLAGS="-O3 -march=native"
 export LIBNAME=unice68.dll # Just for example, it should be guessed properly
 pip install .
 ```
@@ -37,12 +43,12 @@ pip install .
 ### Usage
 
 ```python
-from icepack import Icepack
+from icepacker import Icepacker
 
-icepack = Icepack()
+ice = Icepacker()
 data = b"Hello!"
-compressed = icepack.pack(data)
-decompressed = icepack.depack(compressed)
+compressed = ice.pack(data)
+decompressed = ice.depack(compressed)
 print(decompressed.decode('utf-8'))
 ```
 
@@ -51,27 +57,12 @@ print(decompressed.decode('utf-8'))
 If you prefer to compile `libunice68` manually:
 
 ```bash
-cd src
-make
-cp -- *unice68*.{dll,so,dylib} ../icepack/lib/
+mkdir -p icepacker/lib
+make -C icepacker/lib -f unice68/Makefile CC=gcc LIBNAME=libunice68.so
 ```
+### Security issue
 
-On Windows with MSVC:
-
-```bash
-cd src
-cl.exe /LD icepack.c /Fe../icepack/lib/icepack.dll
-```
-
-### Notes for Windows
-
-- If using MSVC, compile manually with `cl.exe` as shown above.
-- With MinGW, automatic compilation works with `make`.
-- Prebuilt binaries in `icepack/lib/` are used automatically if available.
-
-### Troubleshooting
-
-If you encounter the error "Could not find icepack library", check that:
-- A prebuilt binary is present in `icepack/lib/` (e.g., `libunice68.so`, `unice68.dll`).
-- A system library is installed and accessible via `LD_LIBRARY_PATH` (Linux), `PATH` (Windows), or equivalent.
-- You have compiled `libunice68` manually and placed the result in `icepack/lib/` with the appropriate name (e.g., `libunice68.so` on Linux).
+The `icepacker.pack()` function calls `unice68_pack()` C function that
+is not properly protected against buffer overflow. Chance for it to
+happen are quiet low as the python module allocate supplemental memory
+to mitigate the situation. It will be fixed in a near future.
